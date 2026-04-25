@@ -6,6 +6,7 @@ import { encrypt } from '@/lib/crypto';
 import { logger } from '@/lib/logger';
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY!;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -13,7 +14,7 @@ export const auth = betterAuth({
     usePlural: false,
   }),
   secret: process.env.BETTER_AUTH_SECRET!,
-  baseURL: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+  baseURL: APP_URL,
   user: {
     additionalFields: {
       avatarUrl: {
@@ -37,17 +38,17 @@ export const auth = betterAuth({
     },
   },
   socialProviders: {
-  github: {
-    clientId: process.env.GITHUB_CLIENT_ID!,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    scope: ['read:user', 'user:email', 'repo'],
-    pkce: false,  // add this line
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      scope: ['read:user', 'user:email', 'repo'],
+      // pkce: false  <-- REMOVED, not a valid option
+    },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
   },
-  google: {
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  },
-},
   callbacks: {
     async onOAuthSuccess({ user, account }: { user: { id: string; name?: string; image?: string }; account: { provider: string; accessToken?: string } }) {
       if (account.provider === 'github' && account.accessToken) {

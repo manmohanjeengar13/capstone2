@@ -1,5 +1,5 @@
+// middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 
 const PROTECTED = ['/dashboard', '/analyze', '/reports'];
 
@@ -7,8 +7,12 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl;
 
   if (PROTECTED.some(p => pathname.startsWith(p))) {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session) {
+    // Check for Better Auth session cookie directly — no Node.js imports needed
+    const sessionCookie = 
+      req.cookies.get('better-auth.session_token') ?? 
+      req.cookies.get('__Secure-better-auth.session_token');
+
+    if (!sessionCookie?.value) {
       const url = new URL('/login', req.url);
       url.searchParams.set('from', pathname);
       return NextResponse.redirect(url);
