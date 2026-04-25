@@ -1,6 +1,7 @@
 // prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client"
 }
 
 datasource db {
@@ -18,6 +19,7 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   sessions     Session[]
+  accounts     Account[]
   analysisJobs AnalysisJob[]
   reports      Report[]
 }
@@ -32,6 +34,34 @@ model Session {
 
   @@index([token])
   @@index([expiresAt])
+}
+
+model Account {
+  id            String    @id @default(cuid())
+  userId        String
+  accountId     String
+  providerId    String
+  accessToken   String?
+  refreshToken  String?
+  idToken       String?
+  expiresAt     DateTime?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
 }
 
 model AnalysisJob {
@@ -51,37 +81,33 @@ model AnalysisJob {
 
   @@index([userId])
   @@index([status])
-  // Prevents duplicate in-flight jobs for the same repo per user
   @@unique([userId, repoUrl, status])
 }
 
 model Report {
-  id                 String      @id @default(cuid())
-  jobId              String      @unique
-  userId             String
-  repoUrl            String
-  repoName           String
-  repoOwner          String
-  healthScore        Float
-  grade              HealthGrade
-  subScores          Json
-  busFactor          Int
-  riskAreas          Json
-  contributors       Json
-  heatmap            Json
-  languages          Json
-  topComplexFiles    Json
-  teamHealthSignals  Json        @default("[]")
-  summary            String
-  rawData            Json
-  deletedAt          DateTime?
-  createdAt          DateTime    @default(now())
-  job                AnalysisJob @relation(fields: [jobId], references: [id])
-  user               User        @relation(fields: [userId], references: [id])
+  id                String      @id @default(cuid())
+  jobId             String      @unique
+  userId            String
+  repoUrl           String
+  repoName          String
+  repoOwner         String
+  healthScore       Float
+  grade             HealthGrade
+  subScores         Json
+  busFactor         Int
+  riskAreas         Json
+  contributors      Json
+  heatmap           Json
+  languages         Json
+  topComplexFiles   Json
+  teamHealthSignals Json        @default("[]")
+  summary           String
+  rawData           Json
+  deletedAt         DateTime?
+  createdAt         DateTime    @default(now())
+  job               AnalysisJob @relation(fields: [jobId], references: [id])
+  user              User        @relation(fields: [userId], references: [id])
 
-  // Composite indexes covering the two common paginated list query shapes:
-  // WHERE userId AND deletedAt IS NULL ORDER BY createdAt DESC
-  // WHERE userId AND deletedAt IS NULL ORDER BY healthScore DESC
   @@index([userId, deletedAt, createdAt(sort: Desc)])
   @@index([userId, deletedAt, healthScore(sort: Desc)])
 }
