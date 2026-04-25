@@ -8,20 +8,46 @@ import { logger } from '@/lib/logger';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY!;
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: 'postgresql' }),
+  database: prismaAdapter(prisma, {
+    provider: 'postgresql',
+    usePlural: false,
+  }),
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
-  socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      scope: ['read:user', 'user:email', 'repo'],
+  user: {
+    additionalFields: {
+      avatarUrl: {
+        type: 'string',
+        required: false,
+        fieldName: 'avatarUrl',
+      },
+      githubToken: {
+        type: 'string',
+        required: false,
+        fieldName: 'githubToken',
+      },
+      githubLogin: {
+        type: 'string',
+        required: false,
+        fieldName: 'githubLogin',
+      },
     },
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    mapFields: {
+      image: 'avatarUrl',
     },
   },
+  socialProviders: {
+  github: {
+    clientId: process.env.GITHUB_CLIENT_ID!,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    scope: ['read:user', 'user:email', 'repo'],
+    pkce: false,  // add this line
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  },
+},
   callbacks: {
     async onOAuthSuccess({ user, account }: { user: { id: string; name?: string; image?: string }; account: { provider: string; accessToken?: string } }) {
       if (account.provider === 'github' && account.accessToken) {
